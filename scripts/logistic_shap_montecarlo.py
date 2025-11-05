@@ -59,13 +59,11 @@ def fit_logit_statsmodels(X_std_df: pd.DataFrame, y: np.ndarray):
         return {"ok": False, "error": str(e)}
 
 def ensure_numpy_compat_for_shap():
-    # Some SHAP versions expect np.bool/np.int/np.float aliases (removed in recent NumPy)
     for alias, real in [("bool", bool), ("int", int), ("float", float)]:
         if not hasattr(np, alias):
             setattr(np, alias, real)
 
 def shap_summary(model, X_std: np.ndarray, feature_names, out_path: Path, seed=SHAP_SEED):
-    """Compute SHAP mean |values|; uses LinearExplainer if possible, else generic Explainer."""
     ensure_numpy_compat_for_shap()
     try:
         rng = np.random.default_rng(seed)
@@ -75,7 +73,6 @@ def shap_summary(model, X_std: np.ndarray, feature_names, out_path: Path, seed=S
         X_bg = X_std[idx, :]
 
         shap_df = None
-        # Prefer LinearExplainer for linear models (faster, exact for logit link)
         try:
             explainer = shap.LinearExplainer(model, X_bg)
             sv = explainer.shap_values(X_bg)
@@ -83,7 +80,6 @@ def shap_summary(model, X_std: np.ndarray, feature_names, out_path: Path, seed=S
             mean_abs = np.abs(vals).mean(axis=0)
             shap_df = pd.DataFrame({"feature": feature_names, "mean_abs_shap": mean_abs})
         except Exception:
-            # Fallback to model-agnostic
             explainer = shap.Explainer(model, X_bg)
             sv = explainer(X_bg)
             vals = getattr(sv, "values", sv)
@@ -187,7 +183,7 @@ def main():
     # SHAP
     shap_ok, _ = shap_summary(model, X_std, feature_names, OUT_DIR / "shap_summary.csv")
 
-    # Monte Carlo: prefer statsmodels covariance; fallback to bootstrap
+    # Monte Carlo: prefer statsmodels covariance
     stats_info = fit_logit_statsmodels(X_std_df, y)
     if stats_info.get("ok", False):
         pct = mc_param_uncertainty_statsmodels(X_std_df, stats_info, MC_N_DRAWS, ROW_SUBSAMPLE_FOR_MC)
