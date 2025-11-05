@@ -25,7 +25,7 @@ No personally identifiable information is used. The intent of this project is ed
 
 ## Step 1: Data Cleaning & Feature Engineering
 
-**Script:** `feature_engineering_6to17_corr08_vif.py`  
+**Script:** `feature_engineering.py`  
 What it does:
 - Filters to **ages 6–17**
 - Cleans NSCH special missing codes (e.g., 95/96/97/98/99)
@@ -45,14 +45,14 @@ NSCH flourishing count `flrsh6to17ct` (0–3) is binarized:
 
 Run:
 ```bash
-python feature_engineering_6to17_corr08_vif.py
+python feature_engineering.py
 ```
 
 ---
 
 ## Step 2: Monte Carlo Simulation with Logistic Model + SHAP
 
-**Script:** `logistic_shap_montecarlo.py`
+**Script:** `train_logistic_shap_montecarlo.py`
 
 - Standardizes features; fits **LogisticRegression**
 - Exports **coefficients**
@@ -69,7 +69,7 @@ python feature_engineering_6to17_corr08_vif.py
 
 Run:
 ```bash
-python logistic_shap_montecarlo.py
+python train_logistic_shap_montecarlo.py
 ```
 
 ---
@@ -97,10 +97,10 @@ pandas, numpy, scikit-learn, statsmodels, shap
 
 ```bash
 # 1) Run feature engineering
-python feature_engineering_6to17_corr08_vif.py
+python feature_engineering.py
 
 # 2) Run logistic + SHAP + Monte Carlo
-python logistic_shap_montecarlo.py
+python train_logistic_shap_montecarlo.py
 ```
 
 ---
