@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 import statsmodels.api as sm
 import shap
+import pickle
 
 # =========================
 # Config
@@ -59,11 +60,13 @@ def fit_logit_statsmodels(X_std_df: pd.DataFrame, y: np.ndarray):
         return {"ok": False, "error": str(e)}
 
 def ensure_numpy_compat_for_shap():
+    # Some SHAP versions expect np.bool/np.int/np.float aliases (removed in recent NumPy)
     for alias, real in [("bool", bool), ("int", int), ("float", float)]:
         if not hasattr(np, alias):
             setattr(np, alias, real)
 
 def shap_summary(model, X_std: np.ndarray, feature_names, out_path: Path, seed=SHAP_SEED):
+    """Compute SHAP mean |values|; uses LinearExplainer if possible, else generic Explainer."""
     ensure_numpy_compat_for_shap()
     try:
         rng = np.random.default_rng(seed)
@@ -73,6 +76,7 @@ def shap_summary(model, X_std: np.ndarray, feature_names, out_path: Path, seed=S
         X_bg = X_std[idx, :]
 
         shap_df = None
+        # Prefer LinearExplainer for linear models (faster, exact for logit link)
         try:
             explainer = shap.LinearExplainer(model, X_bg)
             sv = explainer.shap_values(X_bg)
@@ -80,6 +84,7 @@ def shap_summary(model, X_std: np.ndarray, feature_names, out_path: Path, seed=S
             mean_abs = np.abs(vals).mean(axis=0)
             shap_df = pd.DataFrame({"feature": feature_names, "mean_abs_shap": mean_abs})
         except Exception:
+            # Fallback to model-agnostic
             explainer = shap.Explainer(model, X_bg)
             sv = explainer(X_bg)
             vals = getattr(sv, "values", sv)
@@ -167,8 +172,9 @@ def main():
     df["target_bin"] = (df[TARGET_SOURCE] == 3).astype(int)
     y = df["target_bin"].values
 
-    # X: drop target and any direct near-target source
-    X_df = df.drop(columns=["target_bin", TARGET_SOURCE])
+    # X: drop target and ID columns
+    ID_COL = "hhid"
+    X_df = df.drop(columns=["target_bin", TARGET_SOURCE, ID_COL])   
 
     # Standardize X
     scaler = StandardScaler(with_mean=True, with_std=True)
@@ -178,12 +184,19 @@ def main():
 
     # Logistic baseline + coefficients
     model, coef_df = fit_logistic_sklearn(X_std, y, feature_names)
+    with open(OUT_DIR / "logistic_model.pkl", "wb") as f:
+        pickle.dump(model, f)
     save_df(coef_df, OUT_DIR / "logistic_coefficients.csv")
+
+    with open(OUT_DIR / "scaler.pkl", "wb") as f:
+        pickle.dump(scaler, f)
+
+    (OUT_DIR / "feature_names.json").write_text(json.dumps(feature_names, indent=2))
 
     # SHAP
     shap_ok, _ = shap_summary(model, X_std, feature_names, OUT_DIR / "shap_summary.csv")
 
-    # Monte Carlo: prefer statsmodels covariance
+    # Monte Carlo: prefer statsmodels covariance; fallback to bootstrap
     stats_info = fit_logit_statsmodels(X_std_df, y)
     if stats_info.get("ok", False):
         pct = mc_param_uncertainty_statsmodels(X_std_df, stats_info, MC_N_DRAWS, ROW_SUBSAMPLE_FOR_MC)
@@ -193,6 +206,7 @@ def main():
         mc_mode = f"bootstrap_fallback: {stats_info.get('error', 'unknown error')}"
 
     pct = add_bands(pct)
+    pct["hhid"] = df.loc[pct["row_index"], ID_COL].values
     save_df(pct, OUT_DIR / "mc_readiness_percentiles.csv")
 
     # Save run config for provenance
