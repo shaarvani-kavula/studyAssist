@@ -1,4 +1,3 @@
-# fe_oop.py
 from __future__ import annotations
 import re
 from dataclasses import dataclass
@@ -22,8 +21,8 @@ class FEConfig:
     age_max: int = 17
 
     # ID columns
-    raw_id_col: str = "HHID"   # in raw
-    canon_id_col: str = "hhid" # in engineered outputs (lowercase)
+    raw_id_col: str = "HHID"   
+    canon_id_col: str = "hhid" 
 
     # Missing codes
     special_missing: Set[int] = None
