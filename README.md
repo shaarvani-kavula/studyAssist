@@ -41,7 +41,6 @@ NSCH flourishing count `flrsh6to17ct` (0–3) is binarized:
 ### Output
 - **Rows:** ~33,638  
 - **Features:** ~363–365
-- Saved to: `outputs/nsch_features_6to17_corr08_vif.csv`
 
 Run:
 ```bash
