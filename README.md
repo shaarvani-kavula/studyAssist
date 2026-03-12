@@ -73,7 +73,7 @@ python train_logistic_shap_montecarlo.py
 
 ---
 
-## Step 3: StudyAssist (LLM Layer) — *In Progress*
+## Step 3: StudyAssist (Use SHAP outputs for LLM Layer) — *In Progress*
 
 The StudyAssist assistant will:
 - Accept a child’s contextual details & strengths
@@ -83,14 +83,15 @@ The StudyAssist assistant will:
 
 Run:
 ```bash
-python study_assist_llm.py
+python llm/study_assist_llm.py
 ```
 
 ![Shap output](imgs/shap_output.png "Shap output image")
 
 
-Output with shap features that shall become input to chatbot for further conversation. [In Progress]
----
+Output with shap features that shall become input to chatbot for further conversation.
+
+
 
 ## Environment
 
