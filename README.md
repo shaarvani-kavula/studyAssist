@@ -81,6 +81,13 @@ The StudyAssist assistant will:
 - Explain *why* (SHAP + coefficients)
 - Offer **gentle, personalized study guidance**
 
+Run:
+```bash
+python study_assist_llm.py
+```
+![Shap output](imgs/shap_output.png "Shap output image")
+
+This will output the prompt with shap features that shall become input to chatbot for further conversation. [In Progress]
 ---
 
 ## Environment
